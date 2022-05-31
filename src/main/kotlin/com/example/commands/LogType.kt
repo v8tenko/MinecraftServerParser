@@ -1,0 +1,5 @@
+package com.example.commands
+
+enum class LogType {
+    BUILD_FINISHED, SERVER_STOP, PLAYER_CONNECTION_STATUS, ERROR, CHAT_EVENT, NOISE, WHITELIST_OK, WHITELIST_ERROR;
+}
