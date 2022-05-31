@@ -84,12 +84,12 @@ suspend fun main() {
                 )
             }
 
-            command("enableMessages") {
+            command("enable_messages") {
                 Chats.subscribeChat(message.chat.title ?: message.from?.username ?: return@command, message.chat.id)
                 bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
             }
 
-            command("disableMessages") {
+            command("disable_messages") {
                 Chats.unsubscribeChat(message.chat.id)
                 bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
             }
