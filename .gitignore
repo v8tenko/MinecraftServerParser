@@ -12,6 +12,7 @@ build/
 .settings
 .springBeans
 .sts4-cache
+hohup.out
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
