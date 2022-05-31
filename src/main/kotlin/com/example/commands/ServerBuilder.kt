@@ -15,6 +15,7 @@ import java.io.OutputStream
 class ServerBuilder(private val command: String, private val args: String, outputStream: OutputStream) {
     private var process: Process? = null
     private var buildChannel = Channel<Boolean>()
+    private var onlineList = mutableListOf<String>()
     private var processWriter: BufferedWriter? = null
     private var processReader: BufferedReader? = null
 
@@ -54,12 +55,15 @@ class ServerBuilder(private val command: String, private val args: String, outpu
                         eventsChannel.send(shouldLog)
                     }
                 }
-                if (logType == LogType.BUILD_FINISHED) {
-                    buildChannel.send(true)
+
+                when (logType) {
+                    LogType.BUILD_FINISHED -> buildChannel.send(true)
+                    LogType.WHITELIST_OK -> Users.updatePlayerWhitelistStatus(shouldLog!!)
+                    LogType.PLAYER_JOINED -> onlineList.add(LogParser.nicknameFromQuery(shouldLog!!))
+                    LogType.PLAYER_LEFT -> onlineList.remove(LogParser.nicknameFromQuery(shouldLog!!))
+                    else -> {}
                 }
-                if (logType == LogType.WHITELIST_OK) {
-                    Users.updatePlayerWhitelistStatus(shouldLog!!)
-                }
+
                 systemWriter.write(query)
                 systemWriter.newLine()
                 systemWriter.flush()
@@ -84,10 +88,23 @@ class ServerBuilder(private val command: String, private val args: String, outpu
 
             return@launch
         }
+        onlineList.clear()
         writeToServer(Commands.STOP)
         delay(1000)
         process?.destroy()
         status = State.OFF
+    }
+
+    fun status(): String {
+        if (status == State.OFF) {
+            return "Server is down"
+        }
+
+        if (onlineList.isEmpty()) {
+            return "Server is running. Current online: nobody"
+        }
+
+        return "Server is running. Current online: ${onlineList.joinToString(" ")}"
     }
 
     fun writeToServer(query: String) {

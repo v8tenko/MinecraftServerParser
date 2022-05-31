@@ -80,7 +80,7 @@ suspend fun main() {
             command("status") {
                 bot.sendMessage(
                     ChatId.fromId(message.chat.id),
-                    if (serverBuilder.status == ServerBuilder.State.ON) "Server is running" else "Server is down"
+                    serverBuilder.status()
                 )
             }
 
@@ -166,7 +166,7 @@ suspend fun main() {
                         return@launch
                     }
 
-                    serverBuilder.writeToServer(args.joinToString(" "))
+                    serverBuilder.writeToServer("/" + args.joinToString(" "))
                     bot.sendMessage(chatId, "OK")
                 }
             }

@@ -49,8 +49,10 @@ object LogParser {
             return null to LogType.NOISE
         }
 
+        val status = if (query.contains("joined")) LogType.PLAYER_JOINED else LogType.PLAYER_LEFT
+
         return (query.split(":").lastOrNull()
-            ?: throw IllegalStateException("Cannot parse log (PLAYER_ENTER): $query")) to LogType.PLAYER_CONNECTION_STATUS
+            ?: throw IllegalStateException("Cannot parse log (PLAYER_ENTER): $query")) to status
     }
 
     fun isPlayerMessage(query: String): Pair<String?, LogType> {
@@ -91,6 +93,14 @@ object LogParser {
 
         return (nameRegex.find(query)?.value?.split(" ")?.get(1)
             ?: throw IllegalStateException("Cannot parse log (WHITELIST ERROR): $query")) to LogType.WHITELIST_ERROR
+    }
+
+    fun nicknameFromQuery(query: String): String {
+        val selectRegex = ".* ((joined)|(left))".toRegex()
+
+
+        return (selectRegex.find(query)?.value
+            ?: throw IllegalArgumentException("Error: Unable to get nickname from query $query")).split(" ")[0]
     }
 
 }
