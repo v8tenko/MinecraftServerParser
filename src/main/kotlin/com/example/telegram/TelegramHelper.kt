@@ -20,17 +20,13 @@ sealed class CheckUser {
 
     class WithAccess(private val accessLevel: Int) : CheckUser() {
         override suspend fun validate(message: Message, args: List<String>): String? {
-            println(
-                "TEST STATUS" +
-                        Users.getUserAccessStatus(message.from!!.username!!)
-            )
-            if (Users.getUserAccessStatus(message.from!!.username!!) >= accessLevel) {
+            val requesterLevel = Users.getUserAccessStatus(message.from!!.username!!)
 
+            if (requesterLevel >= accessLevel) {
                 return null
-
             }
 
-            return if (accessLevel == Access.NOT_REGISTERED) {
+            return if (requesterLevel == Access.NOT_REGISTERED) {
                 Commands.Errors.NEED_TO_REGISTER
             } else {
                 Commands.Errors.accessDenied(accessLevel)
