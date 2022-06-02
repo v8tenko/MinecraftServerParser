@@ -21,6 +21,11 @@ sealed class CheckUser {
     class WithAccess(private val accessLevel: Int) : CheckUser() {
         override suspend fun validate(message: Message, args: List<String>): String? {
             if (Users.getUserAccessStatus(message.from!!.username!!) >= accessLevel) {
+                println(
+                    "ACCESS FOR ${message.from!!.username}: ${
+                        Users.getUserAccessStatus(message.from!!.username!!)
+                    }"
+                )
                 return null
 
             }
@@ -43,7 +48,7 @@ sealed class CheckUser {
         }
     }
 
-    class WithServerStatus(private val state: ServerStatus): CheckUser() {
+    class WithServerStatus(private val state: ServerStatus) : CheckUser() {
         override suspend fun validate(message: Message, args: List<String>): String? {
             if (state == ServerBuilder.STATUS) {
                 return null

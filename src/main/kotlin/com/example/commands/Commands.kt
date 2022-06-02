@@ -9,11 +9,7 @@ object Commands {
     object Errors {
         const val SERVER_IS_RUNNING = "ServerError: Unable to run command: server is running"
         const val SERVER_IS_NOT_RUNNING = "ServerError: Unable to run command: server is down"
-        const val NEED_TO_REGISTER = "You need to enter server, to get it's STATUS"
-
-
-        fun minecraftNicknameIsMissing(command: String = "command") =
-            "Illegal arguments: $command requires minecraft nickname"
+        const val NEED_TO_REGISTER = "You need to join server, to get it's status"
 
         fun missingArguments(requires: Int, given: Int) =
             "Illegal arguments: command requires $requires, given $given"
