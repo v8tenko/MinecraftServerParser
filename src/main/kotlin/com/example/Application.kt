@@ -122,19 +122,11 @@ suspend fun main() {
                         return@validate
                     }
 
-                    botScope.launch {
-                        val userRole = Users.getUserAccessStatus(requesterName)
-                        val roleAccessLevel = Access.getAccessLevelByLabel(role)
-                        if (userRole < roleAccessLevel) {
-                            bot.sendMessage(chatId, Commands.Errors.accessDenied(roleAccessLevel))
-
-                            return@launch
-                        }
-                        names.forEach { name ->
-                            Users.registerUser(name, userRole)
-                        }
-                        bot.sendMessage(chatId, "${names.joinToString(" ")} registered with role $role")
+                    names.forEach { name ->
+                        Users.registerUser(name, Access.getAccessLevelByLabel(role))
                     }
+
+                    bot.sendMessage(chatId, "${names.joinToString(" ")} registered with role $role")
                 }
             }
 
