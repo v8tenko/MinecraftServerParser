@@ -9,7 +9,7 @@ object Commands {
     object Errors {
         const val SERVER_IS_RUNNING = "ServerError: Unable to run command: server is running"
         const val SERVER_IS_NOT_RUNNING = "ServerError: Unable to run command: server is down"
-        const val NEED_TO_REGISTER = "You need to join server, to get it's status"
+        const val NEED_TO_REGISTER = "You need to join server, to run this command"
 
         fun missingArguments(requires: Int, given: Int) =
             "Illegal arguments: command requires $requires, given $given"
