@@ -1,8 +1,13 @@
 package com.example
 
+import com.example.commands.Commands
 import com.example.commands.ServerBuilder
 import com.example.database.Chats
 import com.example.database.Users
+import com.example.telegram.botScope
+import com.example.telegram.validate
+import com.example.telegram.withAccess
+import com.example.telegram.withArgumentsCount
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.command
@@ -20,7 +25,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 suspend fun main() {
     val serverBuilder = ServerBuilder("sh", "start.sh", System.out)
-    val botScope = CoroutineScope(Dispatchers.Default)
 
     Database.connect(
         "jdbc:mysql://localhost:3306/telegram_bot",
@@ -50,77 +54,77 @@ suspend fun main() {
             }
 
             command("start") {
-                val id = ChatId.fromId(message.chat.id)
+                validate(withAccess(Access.OPERATOR)) {
+                    val id = ChatId.fromId(message.chat.id)
 
-                botScope.launch {
-                    if (Users.getUserAccessStatus(message.from!!.username!!) >= Access.ADMIN) {
-                        serverBuilder.startServer()
-                        bot.sendMessage(id, "OK")
-                    } else {
-                        bot.sendMessage(id, "Access denied: requires level 2")
-
-                    }
+                    serverBuilder.startServer()
+                    bot.sendMessage(id, "OK")
                 }
             }
 
             command("stop") {
-                val id = ChatId.fromId(message.chat.id)
+                validate(withAccess(Access.ADMIN)) {
+                    val id = ChatId.fromId(message.chat.id)
 
-                botScope.launch {
-                    if (Users.getUserAccessStatus(message.from!!.username!!) >= Access.ADMIN) {
-                        serverBuilder.stopServer()
-                        bot.sendMessage(id, "OK")
-                    } else {
-                        bot.sendMessage(id, "Access denied: requires level 2")
-
-                    }
+                    serverBuilder.stopServer()
+                    bot.sendMessage(id, "OK")
                 }
             }
 
             command("status") {
-                bot.sendMessage(
-                    ChatId.fromId(message.chat.id),
-                    serverBuilder.status()
-                )
+                validate(withAccess(Access.USER)) {
+                    bot.sendMessage(
+                        ChatId.fromId(message.chat.id),
+                        serverBuilder.status()
+                    )
+                }
             }
 
             command("enable_messages") {
-                Chats.subscribeChat(message.chat.title ?: message.from?.username ?: return@command, message.chat.id)
-                bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                validate(withAccess(Access.USER)) {
+                    Chats.subscribeChat(
+                        message.chat.title ?: message.from?.username ?: return@validate,
+                        message.chat.id
+                    )
+                    bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                }
             }
 
             command("disable_messages") {
-                Chats.unsubscribeChat(message.chat.id)
-                bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                validate(withAccess(Access.USER)) {
+                    Chats.unsubscribeChat(message.chat.id)
+                    bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                }
             }
 
             command("register") {
-                val chatId = ChatId.fromId(message.chat.id)
-                val requesterName = message.from!!.username!!
+                validate(withArgumentsCount(1), withAccess(Access.USER)) {
+                    val chatId = ChatId.fromId(message.chat.id)
+                    val requesterName = message.from!!.username!!
 
-                if (args.isEmpty()) {
-                    bot.sendMessage(chatId, "Unable to register user: username is missing")
-                }
-                if (args.size == 1) {
-                    val name = args[0]
+                    if (args.size == 1) {
+                        val name = args[0]
 
-                    Users.registerUser(name, Access.USER)
-                    bot.sendMessage(chatId, "$name registered")
-                } else {
+                        Users.registerUser(name, Access.USER)
+                        bot.sendMessage(chatId, "$name registered")
+
+                        return@validate
+                    }
+
                     val role = args[0]
                     val names = args.subList(1, args.size)
 
                     if (!Access.contains(role)) {
                         bot.sendMessage(chatId, "Role $role not found")
 
-                        return@command
+                        return@validate
                     }
 
                     botScope.launch {
                         val userRole = Users.getUserAccessStatus(requesterName)
                         val roleAccessLevel = Access.getAccessLevelByLabel(role)
                         if (userRole < roleAccessLevel) {
-                            bot.sendMessage(chatId, "Access denied: requires level $roleAccessLevel")
+                            bot.sendMessage(chatId, Commands.Errors.accessDenied(roleAccessLevel))
 
                             return@launch
                         }
@@ -132,39 +136,29 @@ suspend fun main() {
                 }
             }
 
-            command("bind") {
-                val chatId = ChatId.fromId(message.chat.id)
+            command("ban") {
+                validate(withAccess(Access.ADMIN), withArgumentsCount(1)) {
+                    val name = args[1]
 
-                if (args.isEmpty()) {
-                    bot.sendMessage(chatId, "Illegal arguments: bind requires minecraft nickname")
-
-                    return@command
+                    serverBuilder.block(name)
+                    Users.banUser(name)
                 }
+            }
 
-                val requesterName = message.from!!.username!!
-                val minecraftName = args[0]
+            command("bind") {
+                validate(withAccess(Access.USER), withArgumentsCount(1)) {
+                    val chatId = ChatId.fromId(message.chat.id)
+                    val requesterName = message.from!!.username!!
+                    val minecraftName = args[0]
 
-                Users.bindUser(requesterName, minecraftName)
-                bot.sendMessage(chatId, "$requesterName bound to $minecraftName")
+                    Users.bindUser(requesterName, minecraftName)
+                    bot.sendMessage(chatId, "$requesterName bound to $minecraftName")
+                }
             }
 
             command("run") {
-                val chatId = ChatId.fromId(message.chat.id)
-                val requesterName = message.from!!.username!!
-
-                if (args.isEmpty()) {
-                    bot.sendMessage(chatId, "Illegal arguments: run requires command")
-
-                    return@command
-                }
-
-                botScope.launch {
-                    val userRole = Users.getUserAccessStatus(requesterName)
-                    if (userRole < Access.ADMIN) {
-                        bot.sendMessage(chatId, "Access denied: requires level ${Access.ADMIN}")
-
-                        return@launch
-                    }
+                validate(withAccess(Access.ADMIN), withArgumentsCount(1)) {
+                    val chatId = ChatId.fromId(message.chat.id)
 
                     serverBuilder.writeToServer("/" + args.joinToString(" "))
                     bot.sendMessage(chatId, "OK")

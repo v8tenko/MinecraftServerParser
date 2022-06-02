@@ -79,10 +79,6 @@ class ServerBuilder(private val command: String, private val args: String, outpu
         serverScope.launch {
             buildChannel.receive()
             Users.filterNewUsers().forEach(::whitelist)
-            val names = listOf("v8tenko", "ansshour", "Penguina0008")
-            names.forEach {
-                eventsChannel.send("$it joined the game")
-            }
         }
     }
 
@@ -124,6 +120,10 @@ class ServerBuilder(private val command: String, private val args: String, outpu
 
     fun whitelist(name: String) {
         writeToServer("${Commands.ADD_TO_WHITELIST} $name")
+    }
+
+    fun block(name: String) {
+        writeToServer("${Commands.REMOVE_FROM_WHITELIST} $name")
     }
 
     enum class State {

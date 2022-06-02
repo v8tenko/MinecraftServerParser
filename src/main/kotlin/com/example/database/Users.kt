@@ -13,6 +13,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
@@ -55,9 +56,15 @@ object Users : IntIdTable() {
             }
         }
 
+    fun banUser(userName: String) = databaseScope.launch {
+        transaction {
+            Users.deleteWhere { name eq userName }
+        }
+    }
+
     suspend fun getUserAccessStatus(userName: String) = databaseScope.async {
         transaction {
-            Users.select { name eq userName }.map { it[rootLevel] }[0]
+            Users.select { name eq userName }.map { it[rootLevel] }.getOrNull(0) ?: -1
         }
     }.await()
 

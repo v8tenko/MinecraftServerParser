@@ -4,6 +4,9 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
 
 object Access {
+    // everyone
+    const val NOT_REGISTERED = -1
+
     // can get status, write to chat
     const val USER = 0
 
