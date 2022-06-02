@@ -78,7 +78,17 @@ class ServerBuilder(private val command: String, private val args: String, outpu
         // run lazy operations
         serverScope.launch {
             buildChannel.receive()
+            println("BUILDED FROM LAZY")
             Users.filterNewUsers().forEach(::whitelist)
+        }
+
+        serverScope.launch {
+            buildChannel.receive()
+            println("BUILDED FROM ANOTHER")
+            val names = listOf("v8tenko", "ansshour", "Penguina0008")
+            names.forEach {
+                eventsChannel.send("$it joined the game")
+            }
         }
     }
 
