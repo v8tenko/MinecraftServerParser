@@ -7,7 +7,7 @@ object Access {
     // everyone
     const val NOT_REGISTERED = -1
 
-    // can get status, write to chat
+    // can get STATUS, write to chat
     const val USER = 0
 
     // can start/stop server

@@ -24,20 +24,17 @@ class ServerBuilder(private val command: String, private val args: String, outpu
     private val eventsChannel = Channel<String>()
     val events = eventsChannel as ReceiveChannel<String>
 
-    var status = State.OFF
+    companion object {
+        var STATUS = ServerStatus.OFF
+    }
+
     private var serverScope = CoroutineScope(Dispatchers.IO)
 
-    fun startServer() = serverScope.launch(Dispatchers.IO) launch@{
-        if (status == State.ON) {
-            eventsChannel.send(Commands.Errors.SERVER_IS_ALREADY_RUNNING)
-
-            return@launch
-        }
-
+    fun startServer() = serverScope.launch(Dispatchers.IO) {
         val pb = ProcessBuilder(command, args).redirectErrorStream(true)
 
         process = pb.start()
-        status = State.ON
+        changeStatus(ServerStatus.ON)
         processReader = process!!.inputStream.bufferedReader()
         processWriter = process!!.outputStream.bufferedWriter()
 
@@ -83,20 +80,20 @@ class ServerBuilder(private val command: String, private val args: String, outpu
     }
 
     fun stopServer() = serverScope.launch {
-        if (status == State.OFF) {
-            eventsChannel.send(Commands.Errors.SERVER_IS_NOT_RUNNING)
-
-            return@launch
-        }
         onlineList.clear()
         writeToServer(Commands.STOP)
         delay(1000)
+
         process?.destroy()
-        status = State.OFF
+        changeStatus(ServerStatus.OFF)
+    }
+
+    private fun changeStatus(newState: ServerStatus) {
+        STATUS = newState
     }
 
     fun status(): String {
-        if (status == State.OFF) {
+        if (STATUS == ServerStatus.OFF) {
             return "Server is down"
         }
 
@@ -125,8 +122,5 @@ class ServerBuilder(private val command: String, private val args: String, outpu
     fun block(name: String) {
         writeToServer("${Commands.REMOVE_FROM_WHITELIST} $name")
     }
-
-    enum class State {
-        ON, OFF;
-    }
 }
+

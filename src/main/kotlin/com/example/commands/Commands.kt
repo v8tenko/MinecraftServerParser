@@ -7,9 +7,9 @@ object Commands {
     const val REMOVE_FROM_WHITELIST = "/whitelist remove"
 
     object Errors {
-        const val SERVER_IS_ALREADY_RUNNING = "ServerError: Unable to start server: he is running"
-        const val SERVER_IS_NOT_RUNNING = "ServerError: Unable to stop server: server is down"
-        const val NEED_TO_REGISTER = "You need to enter server, to get it's status"
+        const val SERVER_IS_RUNNING = "ServerError: Unable to run command: server is running"
+        const val SERVER_IS_NOT_RUNNING = "ServerError: Unable to run command: server is down"
+        const val NEED_TO_REGISTER = "You need to enter server, to get it's STATUS"
 
 
         fun minecraftNicknameIsMissing(command: String = "command") =

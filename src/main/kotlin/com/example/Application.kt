@@ -2,12 +2,14 @@ package com.example
 
 import com.example.commands.Commands
 import com.example.commands.ServerBuilder
+import com.example.commands.ServerStatus
 import com.example.database.Chats
 import com.example.database.Users
 import com.example.telegram.botScope
 import com.example.telegram.validate
 import com.example.telegram.withAccess
 import com.example.telegram.withArgumentsCount
+import com.example.telegram.withServerStatus
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.command
@@ -54,7 +56,7 @@ suspend fun main() {
             }
 
             command("start") {
-                validate(withAccess(Access.OPERATOR)) {
+                validate(withAccess(Access.OPERATOR), withServerStatus(ServerStatus.OFF)) {
                     val id = ChatId.fromId(message.chat.id)
 
                     serverBuilder.startServer()
@@ -63,7 +65,7 @@ suspend fun main() {
             }
 
             command("stop") {
-                validate(withAccess(Access.ADMIN)) {
+                validate(withAccess(Access.ADMIN), withServerStatus(ServerStatus.ON)) {
                     val id = ChatId.fromId(message.chat.id)
 
                     serverBuilder.stopServer()
@@ -157,7 +159,7 @@ suspend fun main() {
             }
 
             command("run") {
-                validate(withAccess(Access.ADMIN), withArgumentsCount(1)) {
+                validate(withAccess(Access.ADMIN), withArgumentsCount(1), withServerStatus(ServerStatus.ON)) {
                     val chatId = ChatId.fromId(message.chat.id)
 
                     serverBuilder.writeToServer("/" + args.joinToString(" "))

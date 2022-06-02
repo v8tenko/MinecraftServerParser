@@ -2,6 +2,8 @@ package com.example.telegram
 
 import com.example.Access
 import com.example.commands.Commands
+import com.example.commands.ServerBuilder
+import com.example.commands.ServerStatus
 import com.example.database.Users
 import com.github.kotlintelegrambot.dispatcher.handlers.CommandHandlerEnvironment
 import com.github.kotlintelegrambot.entities.ChatId
@@ -40,10 +42,25 @@ sealed class CheckUser {
             return null
         }
     }
+
+    class WithServerStatus(private val state: ServerStatus): CheckUser() {
+        override suspend fun validate(message: Message, args: List<String>): String? {
+            if (state == ServerBuilder.STATUS) {
+                return null
+            }
+
+            if (ServerBuilder.STATUS == ServerStatus.ON) {
+                return Commands.Errors.SERVER_IS_RUNNING
+            }
+
+            return Commands.Errors.SERVER_IS_NOT_RUNNING
+        }
+    }
 }
 
 fun withAccess(accessLevel: Int) = CheckUser.WithAccess(accessLevel)
 fun withArgumentsCount(count: Int) = CheckUser.WithArguments(count)
+fun withServerStatus(state: ServerStatus) = CheckUser.WithServerStatus(state)
 
 
 fun CommandHandlerEnvironment.validate(vararg checks: CheckUser, callback: suspend () -> Unit) = botScope.launch {
