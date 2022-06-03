@@ -41,8 +41,13 @@ object LogParser {
         }
 
         val textRegex = "<.*> .*".toRegex()
+        val text = textRegex.find(query)?.value?.replace("<", "")?.replace('>', ':')
 
-        return textRegex.find(query)?.value?.replace("<", "")?.replace('>', ':') to LogType.CHAT_EVENT
+        if (text?.contains("small|medium|large") == true) {
+            return null to LogType.NOISE
+        }
+
+        return text to LogType.CHAT_EVENT
     }
 
     fun isError(query: String): Pair<String?, LogType> {
