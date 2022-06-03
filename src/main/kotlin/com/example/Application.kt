@@ -54,10 +54,7 @@ suspend fun main() {
 
             command("start") {
                 validate(withAccess(Access.OPERATOR), withServerStatus(ServerStatus.OFF)) {
-                    val id = ChatId.fromId(message.chat.id)
-
                     serverBuilder.startServer()
-                    bot.sendMessage(id, ResponseStatus.OK)
                 }
             }
 
@@ -66,7 +63,6 @@ suspend fun main() {
                     val id = ChatId.fromId(message.chat.id)
 
                     serverBuilder.stopServer(args.getOrNull(0))
-                    bot.sendMessage(id, ResponseStatus.OK)
                 }
             }
 
@@ -85,14 +81,12 @@ suspend fun main() {
                         message.chat.title ?: message.from?.username ?: return@validate,
                         message.chat.id
                     )
-                    bot.sendMessage(ChatId.fromId(message.chat.id), ResponseStatus.OK)
                 }
             }
 
             command("disable_messages") {
                 validate(withAccess(Access.USER)) {
                     Chats.unsubscribeChat(message.chat.id)
-                    bot.sendMessage(ChatId.fromId(message.chat.id), ResponseStatus.OK)
                 }
             }
 
@@ -122,7 +116,6 @@ suspend fun main() {
                         Users.registerUser(name, Access.getAccessLevelByLabel(role))
                     }
 
-                    bot.sendMessage(chatId, "${names.joinToString(" ")} registered with role $role")
                 }
             }
 
@@ -137,21 +130,16 @@ suspend fun main() {
 
             command("bind") {
                 validate(withAccess(Access.USER), withSingleArgument()) {
-                    val chatId = ChatId.fromId(message.chat.id)
                     val requesterName = message.from!!.username!!
                     val minecraftName = args[0]
 
                     Users.bindUser(requesterName, minecraftName)
-                    bot.sendMessage(chatId, "$requesterName bound to $minecraftName")
                 }
             }
 
             command("run") {
                 validate(withAccess(Access.ADMIN), withSingleArgument(), withServerStatus(ServerStatus.ON)) {
-                    val chatId = ChatId.fromId(message.chat.id)
-
                     serverBuilder.writeToServer("/" + args.joinToString(" "))
-                    bot.sendMessage(chatId, ResponseStatus.OK)
                 }
             }
         }

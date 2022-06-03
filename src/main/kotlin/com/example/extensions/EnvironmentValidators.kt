@@ -77,4 +77,5 @@ fun CommandHandlerEnvironment.validate(vararg checks: CheckUser, callback: suspe
     }
 
     callback()
+    bot.sendMessage(chatId, ResponseStatus.OK)
 }
