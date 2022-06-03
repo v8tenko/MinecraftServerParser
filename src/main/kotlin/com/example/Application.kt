@@ -119,10 +119,11 @@ suspend fun main() {
 
             command("ban") {
                 validate(withAccess(Access.ADMIN), withSingleArgument()) {
+                    val requesterName = message.from!!.username!!
                     val name = args[0]
 
                     serverBuilder.block(name)
-                    Users.banUser(name)
+                    Users.banUser(requesterName)
                 }
             }
 
