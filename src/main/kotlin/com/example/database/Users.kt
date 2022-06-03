@@ -1,27 +1,17 @@
 package com.example.database
 
-import com.example.Access
+import com.example.Scopes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.jetbrains.exposed.dao.IntEntity
-import org.jetbrains.exposed.dao.IntEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.isNull
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
-
-val databaseScope = CoroutineScope(Dispatchers.IO)
 
 object Users : IntIdTable() {
     private val name: Column<String> = varchar("name", 50)
@@ -36,7 +26,7 @@ object Users : IntIdTable() {
     }
 
     fun registerUser(queryName: String, queryRootLevel: Int) =
-        databaseScope.launch {
+        Scopes.databaseScope.launch {
             transaction {
                 val notHaveIt = Users.select { name eq queryName }.toList().isNotEmpty()
                 if (notHaveIt) {
@@ -56,19 +46,19 @@ object Users : IntIdTable() {
             }
         }
 
-    fun banUser(userName: String) = databaseScope.launch {
+    fun banUser(userName: String) = Scopes.databaseScope.launch {
         transaction {
             Users.deleteWhere { name eq userName }
         }
     }
 
-    suspend fun getUserAccessStatus(userName: String) = databaseScope.async {
+    suspend fun getUserAccessStatus(userName: String) = Scopes.databaseScope.async {
         transaction {
             Users.select { name eq userName }.map { it[rootLevel] }.getOrNull(0) ?: -1
         }
     }.await()
 
-    fun updatePlayerWhitelistStatus(userName: String, status: Boolean = false) = databaseScope.launch {
+    fun updatePlayerWhitelistStatus(userName: String, status: Boolean = false) = Scopes.databaseScope.launch {
         transaction {
             Users.update({ name eq userName }) {
                 it[isNew] = status
@@ -76,7 +66,7 @@ object Users : IntIdTable() {
         }
     }
 
-    fun bindUser(userName: String, minecraftNameQuery: String) = databaseScope.launch {
+    fun bindUser(userName: String, minecraftNameQuery: String) = Scopes.databaseScope.launch {
         transaction {
             Users.update({ name eq userName }) {
                 it[minecraftName] = minecraftNameQuery
@@ -85,7 +75,7 @@ object Users : IntIdTable() {
         }
     }
 
-    suspend fun filterNewUsers() = databaseScope.async {
+    suspend fun filterNewUsers() = Scopes.databaseScope.async {
         transaction {
             Users.select { isNew eq true }.map { it[minecraftName] }
         }

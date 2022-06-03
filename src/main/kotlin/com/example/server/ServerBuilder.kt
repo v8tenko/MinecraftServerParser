@@ -1,6 +1,9 @@
-package com.example.commands
+package com.example.server
 
+import com.example.Scopes
 import com.example.database.Users
+import com.example.server.enums.LogType
+import com.example.server.enums.ServerStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -28,9 +31,7 @@ class ServerBuilder(private val command: String, private val args: String, outpu
         var STATUS = ServerStatus.OFF
     }
 
-    private var serverScope = CoroutineScope(Dispatchers.IO)
-
-    fun startServer() = serverScope.launch(Dispatchers.IO) {
+    fun startServer() = Scopes.serverScope.launch(Dispatchers.IO) {
         val pb = ProcessBuilder(command, args).redirectErrorStream(true)
 
         process = pb.start()
@@ -39,7 +40,7 @@ class ServerBuilder(private val command: String, private val args: String, outpu
         processWriter = process!!.outputStream.bufferedWriter()
 
         // start passing logs to channel
-        serverScope.launch(Dispatchers.IO) {
+        Scopes.serverScope.launch(Dispatchers.IO) {
             while (process?.isAlive == true) {
                 val query = try {
                     processReader!!.readLine() ?: continue
@@ -56,8 +57,8 @@ class ServerBuilder(private val command: String, private val args: String, outpu
                 when (logType) {
                     LogType.BUILD_FINISHED -> buildChannel.send(true)
                     LogType.WHITELIST_OK -> Users.updatePlayerWhitelistStatus(shouldLog!!)
-                    LogType.PLAYER_JOINED -> onlineList.add(LogParser.nicknameFromQuery(shouldLog!!))
-                    LogType.PLAYER_LEFT -> onlineList.remove(LogParser.nicknameFromQuery(shouldLog!!))
+                    LogType.PLAYER_JOINED -> onlineList.add(LogParser.nicknameFromQuery(query))
+                    LogType.PLAYER_LEFT -> onlineList.remove(LogParser.nicknameFromQuery(query))
                     else -> {}
                 }
 
@@ -73,19 +74,21 @@ class ServerBuilder(private val command: String, private val args: String, outpu
         }
 
         // run lazy operations
-        serverScope.launch {
+        Scopes.serverScope.launch {
             buildChannel.receive()
             Users.filterNewUsers().forEach(::whitelist)
         }
     }
 
-    fun stopServer() = serverScope.launch {
+    fun stopServer(cause: String? = null) = Scopes.serverScope.launch {
         onlineList.clear()
         writeToServer(Commands.STOP)
         delay(1000)
 
         process?.destroy()
         changeStatus(ServerStatus.OFF)
+        eventsChannel.send("Server stopped " + (cause ?: ""))
+        Scopes.restartServerScope()
     }
 
     private fun changeStatus(newState: ServerStatus) {

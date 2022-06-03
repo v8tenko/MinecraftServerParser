@@ -1,28 +1,25 @@
 package com.example
 
-import com.example.commands.Commands
-import com.example.commands.ServerBuilder
-import com.example.commands.ServerStatus
+import com.example.server.ResponseStatus
+import com.example.server.ServerBuilder
+import com.example.server.enums.ServerStatus
 import com.example.database.Chats
 import com.example.database.Users
-import com.example.telegram.botScope
-import com.example.telegram.validate
-import com.example.telegram.withAccess
-import com.example.telegram.withArgumentsCount
-import com.example.telegram.withServerStatus
+import com.example.extensions.botScope
+import com.example.extensions.validate
+import com.example.extensions.withAccess
+import com.example.extensions.withServerStatus
+import com.example.extensions.withSingleArgument
+import com.example.server.Access
+import com.example.telegram.TelegramUtils
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.text
 import com.github.kotlintelegrambot.entities.ChatId
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 
 suspend fun main() {
@@ -60,7 +57,7 @@ suspend fun main() {
                     val id = ChatId.fromId(message.chat.id)
 
                     serverBuilder.startServer()
-                    bot.sendMessage(id, "OK")
+                    bot.sendMessage(id, ResponseStatus.OK)
                 }
             }
 
@@ -68,8 +65,8 @@ suspend fun main() {
                 validate(withAccess(Access.ADMIN), withServerStatus(ServerStatus.ON)) {
                     val id = ChatId.fromId(message.chat.id)
 
-                    serverBuilder.stopServer()
-                    bot.sendMessage(id, "OK")
+                    serverBuilder.stopServer(args.getOrNull(0))
+                    bot.sendMessage(id, ResponseStatus.OK)
                 }
             }
 
@@ -88,21 +85,20 @@ suspend fun main() {
                         message.chat.title ?: message.from?.username ?: return@validate,
                         message.chat.id
                     )
-                    bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                    bot.sendMessage(ChatId.fromId(message.chat.id), ResponseStatus.OK)
                 }
             }
 
             command("disable_messages") {
                 validate(withAccess(Access.USER)) {
                     Chats.unsubscribeChat(message.chat.id)
-                    bot.sendMessage(ChatId.fromId(message.chat.id), "OK")
+                    bot.sendMessage(ChatId.fromId(message.chat.id), ResponseStatus.OK)
                 }
             }
 
             command("register") {
-                validate(withArgumentsCount(1), withAccess(Access.USER)) {
+                validate(withSingleArgument(), withAccess(Access.USER)) {
                     val chatId = ChatId.fromId(message.chat.id)
-                    val requesterName = message.from!!.username!!
 
                     if (args.size == 1) {
                         val name = args[0]
@@ -131,8 +127,8 @@ suspend fun main() {
             }
 
             command("ban") {
-                validate(withAccess(Access.ADMIN), withArgumentsCount(1)) {
-                    val name = args[1]
+                validate(withAccess(Access.ADMIN), withSingleArgument()) {
+                    val name = args[0]
 
                     serverBuilder.block(name)
                     Users.banUser(name)
@@ -140,7 +136,7 @@ suspend fun main() {
             }
 
             command("bind") {
-                validate(withAccess(Access.USER), withArgumentsCount(1)) {
+                validate(withAccess(Access.USER), withSingleArgument()) {
                     val chatId = ChatId.fromId(message.chat.id)
                     val requesterName = message.from!!.username!!
                     val minecraftName = args[0]
@@ -151,21 +147,21 @@ suspend fun main() {
             }
 
             command("run") {
-                validate(withAccess(Access.ADMIN), withArgumentsCount(1), withServerStatus(ServerStatus.ON)) {
+                validate(withAccess(Access.ADMIN), withSingleArgument(), withServerStatus(ServerStatus.ON)) {
                     val chatId = ChatId.fromId(message.chat.id)
 
                     serverBuilder.writeToServer("/" + args.joinToString(" "))
-                    bot.sendMessage(chatId, "OK")
+                    bot.sendMessage(chatId, ResponseStatus.OK)
                 }
             }
         }
     }
 
+    TelegramUtils.bindBot(bot)
 
-    botScope.launch {
+    Scopes.botScope.launch {
         for (text in serverBuilder.events) {
-            val ids = Chats.all()
-            ids.forEach { bot.sendMessage(ChatId.fromId(it), text) }
+            TelegramUtils.sendToAlLChats(text)
         }
     }
 

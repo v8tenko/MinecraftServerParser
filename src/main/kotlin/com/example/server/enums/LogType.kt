@@ -1,4 +1,4 @@
-package com.example.commands
+package com.example.server.enums
 
 enum class LogType {
     BUILD_FINISHED, SERVER_STOP, PLAYER_JOINED, PLAYER_LEFT, ERROR, CHAT_EVENT, NOISE, WHITELIST_OK, WHITELIST_ERROR;

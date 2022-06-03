@@ -1,9 +1,9 @@
-package com.example.telegram
+package com.example.extensions
 
-import com.example.Access
-import com.example.commands.Commands
-import com.example.commands.ServerBuilder
-import com.example.commands.ServerStatus
+import com.example.server.Access
+import com.example.server.ResponseStatus
+import com.example.server.ServerBuilder
+import com.example.server.enums.ServerStatus
 import com.example.database.Users
 import com.github.kotlintelegrambot.dispatcher.handlers.CommandHandlerEnvironment
 import com.github.kotlintelegrambot.entities.ChatId
@@ -27,9 +27,9 @@ sealed class CheckUser {
             }
 
             return if (requesterLevel == Access.NOT_REGISTERED) {
-                Commands.Errors.NEED_TO_REGISTER
+                ResponseStatus.NEED_TO_REGISTER
             } else {
-                Commands.Errors.accessDenied(accessLevel)
+                ResponseStatus.accessDenied(accessLevel)
             }
         }
     }
@@ -37,7 +37,7 @@ sealed class CheckUser {
     class WithArguments(private val count: Int) : CheckUser() {
         override suspend fun validate(message: Message, args: List<String>): String? {
             if (args.size < count) {
-                return Commands.Errors.missingArguments(count, args.size)
+                return ResponseStatus.missingArguments(count, args.size)
             }
 
             return null
@@ -51,16 +51,17 @@ sealed class CheckUser {
             }
 
             if (ServerBuilder.STATUS == ServerStatus.ON) {
-                return Commands.Errors.SERVER_IS_RUNNING
+                return ResponseStatus.SERVER_IS_RUNNING
             }
 
-            return Commands.Errors.SERVER_IS_NOT_RUNNING
+            return ResponseStatus.SERVER_IS_NOT_RUNNING
         }
     }
 }
 
 fun withAccess(accessLevel: Int) = CheckUser.WithAccess(accessLevel)
 fun withArgumentsCount(count: Int) = CheckUser.WithArguments(count)
+fun withSingleArgument() = CheckUser.WithArguments(1)
 fun withServerStatus(state: ServerStatus) = CheckUser.WithServerStatus(state)
 
 

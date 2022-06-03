@@ -1,4 +1,4 @@
-package com.example
+package com.example.server
 
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField

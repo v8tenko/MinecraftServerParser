@@ -1,4 +1,6 @@
-package com.example.commands
+package com.example.server
+
+import com.example.server.enums.LogType
 
 object LogParser {
 
@@ -6,8 +8,6 @@ object LogParser {
         val checkers =
             listOf(
                 LogParser::isPlayerInfoLog,
-                LogParser::isStartedLog,
-                LogParser::isStoppedLog,
                 LogParser::isError,
                 LogParser::isPlayerMessage,
                 LogParser::isWhitelistOK,
@@ -22,26 +22,6 @@ object LogParser {
         }
 
         return null to LogType.NOISE
-    }
-
-    fun isStartedLog(query: String): Pair<String?, LogType> {
-        if (!query.contains("\\[Server thread/INFO].*: Done".toRegex())) {
-            return null to LogType.NOISE
-        }
-
-        val output = query.split(":").lastOrNull()
-            ?: throw IllegalStateException("Cannot parse log (STARTED): $query")
-        val bracketsRegex = "\\(.*\\)".toRegex()
-
-        return ("Server stared. Build time: " + bracketsRegex.find(output)?.value) to LogType.BUILD_FINISHED
-    }
-
-    fun isStoppedLog(query: String): Pair<String?, LogType> {
-        if (!query.contains("\\[Server Shutdown Thread/INFO].*: Stopping server".toRegex())) {
-            return null to LogType.NOISE;
-        }
-
-        return "Server stopped" to LogType.SERVER_STOP
     }
 
     fun isPlayerInfoLog(query: String): Pair<String?, LogType> {
