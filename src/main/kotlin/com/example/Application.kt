@@ -59,9 +59,7 @@ suspend fun main() {
             }
 
             command("stop") {
-                validate(withAccess(Access.ADMIN), withServerStatus(ServerStatus.ON)) {
-                    val id = ChatId.fromId(message.chat.id)
-
+                validate(withAccess(Access.OPERATOR), withServerStatus(ServerStatus.ON)) {
                     serverBuilder.stopServer(args.getOrNull(0))
                 }
             }
