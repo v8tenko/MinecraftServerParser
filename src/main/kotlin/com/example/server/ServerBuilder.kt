@@ -57,8 +57,8 @@ class ServerBuilder(private val command: String, private val args: String, outpu
                 when (logType) {
                     LogType.BUILD_FINISHED -> buildChannel.send(true)
                     LogType.WHITELIST_OK -> Users.updatePlayerWhitelistStatus(shouldLog!!)
-                    LogType.PLAYER_JOINED -> onlineList.add(LogParser.nicknameFromQuery(query))
-                    LogType.PLAYER_LEFT -> onlineList.remove(LogParser.nicknameFromQuery(query))
+                    LogType.PLAYER_JOINED -> onlineList.add(LogParser.nicknameFromQuery(shouldLog!!))
+                    LogType.PLAYER_LEFT -> onlineList.remove(LogParser.nicknameFromQuery(shouldLog!!))
                     else -> {}
                 }
 

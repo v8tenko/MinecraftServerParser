@@ -81,11 +81,7 @@ object LogParser {
     }
 
     fun nicknameFromQuery(query: String): String {
-        val selectRegex = " .{1,20} ((joined)|(left))".toRegex()
-
-
-        return (selectRegex.find(query)?.value
-            ?: throw IllegalArgumentException("Error: Unable to get nickname from query $query")).split(" ")[2]
+        return query.split(" ").first()
     }
 
 }
